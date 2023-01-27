@@ -1,0 +1,32 @@
+ENV['VAGRANT_DEFAULT_PROVIDER'] = 'vmware_desktop'
+ENV['VAGRANT_EXPERIMENTAL'] = 'disks'
+
+Vagrant.configure("2") do |config|
+
+    config.vm.define 'steamcmd' do |this_config|
+        this_config.vm.box = "bento/ubuntu-22.04"
+        this_config.vm.host_name = 'steamcmd'
+        this_config.vm.provision :shell, inline: "apt-get update"
+
+        #this_config.vm.provision :shell, path: "files/webmin.sh"
+        #this_config.vm.provision :shell, path: "files/tailscale.sh"
+        #this_config.vm.provision :shell, path: "files/steamcmd.sh"
+
+        config.vm.provision "ansible_local" do |ansible|
+            ansible.become = true
+            ansible.playbook = "playbook.yml"
+            ansible.galaxy_role_file = "requirements.yml"
+            ansible.galaxy_roles_path = "/etc/ansible/roles"
+            ansible.galaxy_command = "sudo ansible-galaxy install --role-file=%{role_file} --roles-path=%{roles_path} --force"
+        end
+          
+
+        this_config.vm.provider "vmware_desktop" do |v|
+            v.vmx["memsize"]  = "8192"
+            v.vmx["numvcpus"] = 2
+            v.gui = true
+            v.vmx["virtualhw.version"] = "19"
+        end
+    end
+end
+
