@@ -3,102 +3,18 @@ ENV['VAGRANT_EXPERIMENTAL'] = 'disks'
 
 Vagrant.configure("2") do |config|
 
-    config.vm.define 'steamcmd' do |this_config|
+    config.vm.define 'satisfactory' do |this_config|
         this_config.vm.box = "bento/ubuntu-22.04"
-        this_config.vm.host_name = 'steamcmd'
-        this_config.vm.provision :shell, inline: "apt-get update"
+        this_config.vm.host_name = 'satisfactory'
 
-        #this_config.vm.provision :shell, path: "files/webmin.sh"
-        #this_config.vm.provision :shell, path: "files/tailscale.sh"
-        #this_config.vm.provision :shell, path: "files/steamcmd.sh"
-
-        #config.vm.provision "ansible_local" do |ansible|
-        #    ansible.become = true
-        #    ansible.playbook = "playbook.yml"
-        #end
-
-        this_config.vm.provision "shell", inline: <<-SHELL
-            useradd -rm -s /bin/bash steam
-            usermod -aG sudo steam
-            service ssh reload
-            ## Feel free to edit the password from 'steam' to something else.
-            ## Consider removing/disabling the local vagrant account
-            echo -e "steam\nsteam" | passwd steam
-            mkdir -p /home/steam/steamcmd/satisfactory/satisfactory/Saved/Config/LinuxServer/
-            mkdir -p /home/steam/tmp
-            curl -o /home/steam/steamcmd/steamcmd_linux.tar.gz -sqL "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
-            tar -zxvf /home/steam/steamcmd/steamcmd_linux.tar.gz -C /home/steam/steamcmd/
-            chown -R steam:steam /home/steam
-            ## Give all permissions for vagrant user to copy files into, during file provisioning
-            chmod 0777 /home/steam/tmp
-        SHELL
-
-        ##  Copy files from <.\provisioning_files\steamcmd_satisfactory> path
-        ##
-        ##  steamcmd launch and update scripts, and systemd service configuration file
-
-        this_config.vm.provision "file",
-            source: "files/satisfactory.se rvice",
-            destination: "/home/steam/tmp/satisfactory.service"		
-            
-        this_config.vm.provision "file",
-            source: "files/satisfactory_update",
-            destination: "/home/steam/tmp/satisfactory_update"
-        
-        this_config.vm.provision "file",
-            source: "files/satisfactory_launch",
-            destination: "/home/steam/tmp/satisfactory_launch"
-        
-        ##  satisfactory Server configuration files
-                    
-        # this_config.vm.provision "file",
-        #     source: "files/server_configuration/Admins.txt",
-        #     destination: "/home/steam/tmp/Admins.txt"
-# 
-        # this_config.vm.provision "file",
-        #     source: "files/server_configuration/Game.ini",
-        #     destination: "/home/steam/tmp/Game.ini"
-# 
-        # this_config.vm.provision "file",
-        #     source: "files/server_configuration/MapCycle.txt",
-        #     destination: "/home/steam/tmp/MapCycle.txt"
-
-        ##  move files into respective directories
-
-        this_config.vm.provision "shell", inline: <<-SHELL
-            chown -R steam:steam /home/steam/tmp
-            chmod +x /home/steam/tmp/satisfactory_launch
-            mv /home/steam/tmp/satisfactory_update /home/steam/steamcmd/satisfactory_update
-            mv /home/steam/tmp/satisfactory_launch /home/steam/steamcmd/satisfactory_launch
-            mv /home/steam/tmp/satisfactory.service /home/steam/steamcmd/satisfactory.service		
-        SHELL
-
-        ## adjust the following configurations to match your network's
-
-        this_config.vm.provision "shell", inline: <<-SHELL	
-            apt-get update
-            ##  install basic troubleshooting tools and required libraries for steamcmd
-            apt-get install -y net-tools vim tcpdump lib32gcc1 htop iftop
-            ##  install satisfactory Sandstorm from the file at /home/steam/steamcmd/satisfactory_update
-            runuser -l steam -c '/home/steam/steamcmd/steamcmd.sh +runscript /home/steam/steamcmd/satisfactory_update'
-        SHELL
-
-        ##  move all the appropriate game server files into their correct location
-        ##  create service for update/launch
-        ##  adjust to run on startup
-
-        this_config.vm.provision "shell", inline: <<-SHELL
-            #mv -f /home/steam/tmp/Admins.txt /home/steam/steamcmd/satisfactory/satisfactory/Saved/Config/LinuxServer/Admins.txt
-            #mv -f /home/steam/tmp/Game.ini /home/steam/steamcmd/satisfactory/satisfactory/Saved/Config/LinuxServer/Game.ini
-            #mv -f /home/steam/tmp/MapCycle.txt /home/steam/steamcmd/satisfactory/satisfactory/Saved/Config/LinuxServer/MapCycle.txt
-            ln -s /home/steam/steamcmd/satisfactory.service /etc/systemd/system/satisfactory.service
-            systemctl daemon-reload
-            systemctl enable satisfactory
-            systemctl start satisfactory
-            systemctl status satisfactory
-        SHELL
-
-        ## standard machine config
+        config.vm.provision "ansible_local" do |ansible|
+            ansible.become = true
+            ansible.playbook = "playbook.yml"
+            ansible.config_file = "ansible.cfg"
+            ansible.galaxy_role_file = "requirements.yml"
+            ansible.galaxy_roles_path = "/etc/ansible/collections"
+            ansible.galaxy_command = "sudo ansible-galaxy collection install --requirements-file=%{role_file} --collections-path=%{roles_path} --force"
+        end
 
         this_config.vm.provider "vmware_desktop" do |v|
             v.vmx["memsize"]  = "8192"
