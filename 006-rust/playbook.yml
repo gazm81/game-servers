@@ -1,0 +1,7 @@
+- hosts: all
+  become: true
+  roles:
+     - gazm81.steamapps.tailscale
+     - gazm81.steamapps.webmin
+     - gazm81.steamapps.steamcmd
+     - gazm81.steamapps.server_rust

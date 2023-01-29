@@ -1,0 +1,3 @@
+collections:
+  - name: https://github.com/gazm81/steamapps.git
+    type: git
